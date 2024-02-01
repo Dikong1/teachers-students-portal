@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"html/template"
-	"net/http"
 )
 
 var store = sessions.NewCookieStore([]byte("your-secret-key"))
@@ -41,27 +42,27 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func volLoginHandler(w http.ResponseWriter, r *http.Request) {
+func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		phone := r.FormValue("phone")
 		password := r.FormValue("password")
 		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("teachers")
-		var volunteer Volunteer
-		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&volunteer)
+		var teacher Teacher
+		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&teacher)
 		if err != nil {
 			renderTemplate(w, "vollogin.html", incMsg)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(volunteer.Password), []byte(password))
+		err = bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password))
 		if err != nil {
 			renderTemplate(w, "vollogin.html", incMsg)
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/vol/%s", volunteer.ID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/vol/%s", teacher.ID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
 		renderTemplate(w, "vollogin.html", nil)
 	} else {
@@ -71,7 +72,7 @@ func volLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func volRegHandler(w http.ResponseWriter, r *http.Request) {
+func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		firstName := r.FormValue("firstName")
 		lastName := r.FormValue("lastName")
@@ -85,18 +86,18 @@ func volRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		volunteer := Volunteer{
+		teacher := Teacher{
 			Name:     firstName,
 			Surname:  lastName,
 			Email:    email,
 			Phone:    phone,
 			Password: string(hashedPassword),
-			Child:    nil,
+			Student:  nil,
 		}
 
 		collection := db.Client.Database("EduPortal").Collection("teachers")
 
-		result, err := collection.InsertOne(context.Background(), volunteer)
+		result, err := collection.InsertOne(context.Background(), teacher)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -114,27 +115,27 @@ func volRegHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func chiLogHandler(w http.ResponseWriter, r *http.Request) {
+func studLogHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		phone := r.FormValue("phone")
 		password := r.FormValue("password")
 		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("students")
-		var child Child
-		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&child)
+		var student Student
+		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&student)
 		if err != nil {
 			renderTemplate(w, "chilog.html", incMsg)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(child.Password), []byte(password))
+		err = bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password))
 		if err != nil {
 			renderTemplate(w, "chilog.html", incMsg)
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/chil/%s", child.ID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/chil/%s", student.ID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
 		renderTemplate(w, "chilog.html", nil)
 	} else {
@@ -144,7 +145,7 @@ func chiLogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func chiRegHandler(w http.ResponseWriter, r *http.Request) {
+func studRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		firstName := r.FormValue("firstName")
 		lastName := r.FormValue("lastName")
@@ -159,20 +160,18 @@ func chiRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		child := Child{
-			Name:      firstName,
-			Surname:   lastName,
-			Email:     email,
-			Phone:     phone,
-			Password:  string(hashedPassword),
-			Wish:      nil,
-			Volunteer: nil,
+		student := Student{
+			Name:     firstName,
+			Surname:  lastName,
+			Email:    email,
+			Phone:    phone,
+			Password: string(hashedPassword),
+			Teacher:  nil,
 		}
 
 		collection := db.Client.Database("EduPortal").Collection("students")
-		collectionWishes := db.Client.Database("SantaWeb").Collection("wishes")
 
-		result, err := collection.InsertOne(context.Background(), child)
+		result, err := collection.InsertOne(context.Background(), student)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -181,15 +180,6 @@ func chiRegHandler(w http.ResponseWriter, r *http.Request) {
 
 		insertedID := result.InsertedID.(primitive.ObjectID)
 
-		wishes := Wish{
-			Wishes: "",
-			Child:  &child,
-		}
-		_, err = collectionWishes.InsertOne(context.Background(), wishes)
-		if err != nil {
-			http.Error(w, "Error creating wish", http.StatusInternalServerError)
-			return
-		}
 		http.Redirect(w, r, fmt.Sprintf("/chil/%s", insertedID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
 		renderTemplate(w, "chireg.html", nil)
@@ -212,66 +202,39 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) error 
 	return nil
 }
 
-func volunteerPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
+func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	volunteerID := vars["id"]
+	teacherID := vars["id"]
 
-	var volunteer Volunteer
+	var teacher Teacher
 	collection := db.Client.Database("EduPortal").Collection("teachers")
-	objID, _ := primitive.ObjectIDFromHex(volunteerID)
+	objID, _ := primitive.ObjectIDFromHex(teacherID)
 
-	err := collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&volunteer)
+	err := collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&teacher)
 	if err != nil {
-		http.Error(w, "Volunteer not found", http.StatusNotFound)
+		http.Error(w, "teacher not found", http.StatusNotFound)
 		return
 	}
 
-	renderTemplate(w, "vol.html", volunteer)
+	renderTemplate(w, "vol.html", teacher)
 }
 
-func childPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
+func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	childID := vars["id"]
+	studentID := vars["id"]
 
-	var child Child
+	var student Student
 	collection := db.Client.Database("EduPortal").Collection("students")
-	objID, _ := primitive.ObjectIDFromHex(childID)
+	objID, _ := primitive.ObjectIDFromHex(studentID)
 
-	err := collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&child)
+	err := collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&student)
 	if err != nil {
-		http.Error(w, "Child not found", http.StatusNotFound)
+		http.Error(w, "student not found", http.StatusNotFound)
 		return
 	}
 
-	renderTemplate(w, "chil.html", child)
+	renderTemplate(w, "chil.html", student)
 }
-
-/*func updateWishHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "PUT" {
-		childIdString := r.FormValue("childId")
-		newWish := r.FormValue("wish")
-
-		childId, err := primitive.ObjectIDFromHex(childIdString)
-		if err != nil {
-			http.Error(w, "Invalid Child ID", http.StatusBadRequest)
-			return
-		}
-
-		collection := db.Client.Database("SantaWeb").Collection("Children")
-
-		filter := bson.M{"_id": childId}
-		update := bson.M{"$set": bson.M{"wish": newWish}}
-		_, err = collection.UpdateOne(context.Background(), filter, update)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, "/path-after-updating-wish", http.StatusSeeOther)
-	} else {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-	}
-}*/
 
 func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -282,38 +245,6 @@ func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func updateWishesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	childID, err := getChildIDFromSession(r)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	err = r.ParseForm()
-	if err != nil {
-		http.Error(w, "Error parsing form", http.StatusBadRequest)
-		return
-	}
-	wishes := r.FormValue("wishes")
-
-	wishesCollection := db.Client.Database("SantaWeb").Collection("wishes")
-
-	filter := bson.M{"childId": childID}
-	update := bson.M{"$set": bson.M{"wishes": wishes}}
-	_, err = wishesCollection.UpdateOne(context.Background(), filter, update)
-	if err != nil {
-		http.Error(w, "Error updating wishes", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/path-to-child-page", http.StatusSeeOther)
 }
 
 func getChildIDFromSession(r *http.Request) (primitive.ObjectID, error) {

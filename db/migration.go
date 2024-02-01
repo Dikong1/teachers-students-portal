@@ -16,8 +16,8 @@ func CreateIndexes() error {
 	defer client.Disconnect(context.Background())
 
 	// Создание индексов для коллекции "volunteers"
-	volunteersCollection := client.Database("EduPortal").Collection("teachers")
-	_, err = volunteersCollection.Indexes().CreateOne(
+	teachersCollection := client.Database("EduPortal").Collection("teachers")
+	_, err = teachersCollection.Indexes().CreateOne(
 		context.Background(),
 		mongo.IndexModel{
 			Keys:    map[string]interface{}{"phone": 1},
@@ -29,8 +29,8 @@ func CreateIndexes() error {
 	}
 
 	// Создание индексов для коллекции "children"
-	childrenCollection := client.Database("EduPortal").Collection("students")
-	_, err = childrenCollection.Indexes().CreateOne(
+	studentsCollection := client.Database("EduPortal").Collection("students")
+	_, err = studentsCollection.Indexes().CreateOne(
 		context.Background(),
 		mongo.IndexModel{
 			Keys:    map[string]interface{}{"phone": 1},

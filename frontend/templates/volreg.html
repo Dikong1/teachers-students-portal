@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Registration</title>
+    <!-- Link your CSS file here. The same CSS file can be used or create a new one specifically for this page. -->
+    <link rel="stylesheet" href="../static/style/stylereg.css">
+</head>
+<body>
+<div class="container">
+    <h1>Teacher Registration</h1>
+    <form id="registrationForm" method="post">
+        <div class="form-group">
+            <label for="firstName">Name:</label>
+            <input type="text" id="firstName" name="firstName" required>
+        </div>
+
+        <div class="form-group">
+            <label for="lastName">Surname:</label>
+            <input type="text" id="lastName" name="lastName" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" name="phone" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <button type="submit">Register</button>
+    </form>
+</div>
+</body>
+</html>

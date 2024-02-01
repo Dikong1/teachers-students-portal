@@ -1,0 +1,48 @@
+[
+  {
+    "action": "create_collection",
+    "collection": "children"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "name",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "surname",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "email",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "phone",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "password",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "wish",
+    "type": "string"
+  },
+  {
+    "action": "add_field",
+    "collection": "children",
+    "field": "volunteer",
+    "type": "objectId"
+  }
+]

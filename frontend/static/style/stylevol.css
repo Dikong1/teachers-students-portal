@@ -1,0 +1,25 @@
+/* Add to your existing style.css or create a new CSS file */
+
+.child-wish {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.child-wish h2 {
+    margin-bottom: 10px;
+}
+
+.gift-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.gift-button:hover {
+    background-color: #45a049;
+}

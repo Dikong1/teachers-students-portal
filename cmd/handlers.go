@@ -60,7 +60,7 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 		if err := bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password)); err != nil {
 			// Log and handle the error
 			log.WithField("error", err).Error("Password comparison failed")
-			http.Error(w, "Invalid email or password", http.StatusBadRequest)
+			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
 
@@ -133,7 +133,7 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
 			// Log and handle the error
 			log.WithField("error", err).Error("Password comparison failed")
-			http.Error(w, "Invalid email or password", http.StatusBadRequest)
+			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
 

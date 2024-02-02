@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"SantaWeb/db"
+	"Platform/db"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -17,7 +17,7 @@ func RunServer() {
 	router := mux.NewRouter()
 	setupRoutes(router)
 
-	port := ":8080"
+	port := ":3000"
 	fmt.Printf("Starting server on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }

@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"SantaWeb/db"
+	"Platform/db"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var store = sessions.NewCookieStore([]byte("your-secret-key"))
 
 type errorss struct {
 	ErrorCode int
@@ -245,25 +241,6 @@ func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func getStudentIDFromSession(r *http.Request) (primitive.ObjectID, error) {
-	session, err := store.Get(r, "session-name")
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-
-	studentID, ok := session.Values["studentID"].(string)
-	if !ok {
-		return primitive.NilObjectID, errors.New("student ID not found in session")
-	}
-
-	objID, err := primitive.ObjectIDFromHex(studentID)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-
-	return objID, nil
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request, errCode int, msg string) {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SantaWeb/cmd"
+	"Platform/cmd"
 )
 
 func main() {

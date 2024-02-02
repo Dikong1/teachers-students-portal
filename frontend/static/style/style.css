@@ -29,14 +29,19 @@ main {
 #auth-section {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 100px;
     margin-bottom: 20px;
 }
 
-#auth-section div {
-    border: 1px solid #ccc;
+#auth-section #teacher-auth, #student-auth {
+    width: 300px;
+    height: 450px;
     padding: 20px;
     border-radius: 8px;
+}
+main img {
+    width: 260px;
+    height: 260px;
 }
 
 button {

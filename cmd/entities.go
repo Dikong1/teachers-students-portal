@@ -11,7 +11,7 @@ type Teacher struct {
 	Email    string             `json:"email" bson:"email"`
 	Phone    string             `json:"phone" bson:"phone"`
 	Password string             `json:"password" bson:"password"`
-	Student    *Student             `json:"student,omitempty" bson:"student,omitempty"`
+	Student    *Student          `json:"student,omitempty" bson:"student,omitempty"`
 }
 
 type Student struct {

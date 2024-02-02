@@ -2,7 +2,13 @@ package cmd
 
 import (
 	"Platform/db"
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -20,19 +26,32 @@ func RunServer() {
 	}
 
 	router := mux.NewRouter()
-
 	router.Use(RateLimitMiddleware)
-
 	setupRoutes(router)
 
-	port := ":3000"
-    log_.WithFields(logrus.Fields{
-        "action": "server_start",
-        "status": "running",
-        "port":   port,
-    }).Info("Starting server...")
+	srv := &http.Server{
+		Addr:    ":3000",
+		Handler: router,
+	}
 
-    log_.Fatal(http.ListenAndServe(port, router))
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log_.Fatalf("ListenAndServe(): %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	<-quit
+	log_.Println("Server is shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log_.Fatalf("Server forced to shutdown: %v", err)
+	}
 }
 
 var limiter = rate.NewLimiter(1, 3) // 1 request per second, burst of 3

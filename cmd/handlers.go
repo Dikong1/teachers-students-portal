@@ -42,13 +42,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		phone := r.FormValue("phone")
+		email := r.FormValue("email")
 		password := r.FormValue("password")
 		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("teachers")
 		var teacher Teacher
-		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&teacher)
+		err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&teacher)
 		if err != nil {
 			renderTemplate(w, "teachlog.html", incMsg)
 			return
@@ -114,13 +114,13 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 
 func studLogHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		phone := r.FormValue("phone")
+		email := r.FormValue("email")
 		password := r.FormValue("password")
 		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("students")
 		var student Student
-		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&student)
+		err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student)
 		if err != nil {
 			renderTemplate(w, "studlog.html", incMsg)
 			return
@@ -300,21 +300,9 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-}
-
 func ErrorHandler(w http.ResponseWriter, r *http.Request, errCode int, msg string) {
 	t, err := template.ParseFiles("frontend/templates/Error.html")
 	if err != nil {
-		// w.WriteHeader(http.StatusInternalServerError)
 		ErrorHandler(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
@@ -322,6 +310,5 @@ func ErrorHandler(w http.ResponseWriter, r *http.Request, errCode int, msg strin
 		ErrorCode: errCode,
 		ErrorMsg:  msg,
 	}
-	// w.WriteHeader(Errors.ErrorCode)
 	t.Execute(w, Errors)
 }

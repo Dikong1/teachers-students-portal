@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -88,7 +90,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			Email:    email,
 			Phone:    phone,
 			Password: string(hashedPassword),
-			Student:  nil,
 		}
 
 		collection := db.Client.Database("EduPortal").Collection("teachers")
@@ -162,7 +163,6 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 			Email:    email,
 			Phone:    phone,
 			Password: string(hashedPassword),
-			Teacher:  nil,
 		}
 
 		collection := db.Client.Database("EduPortal").Collection("students")
@@ -230,6 +230,74 @@ func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate(w, "stud.html", student)
+}
+
+func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
+	collection := db.Client.Database("EduCourses").Collection("courses")
+
+	filterValue := r.URL.Query().Get("filter")
+	sortValue := r.URL.Query().Get("sort")
+
+	var filter bson.M
+	if filterValue != "" {
+		filter = bson.M{"name": bson.M{"$regex": filterValue, "$options": "i"}}
+	} else {
+		filter = bson.M{}
+	}
+
+	pageStr := r.URL.Query().Get("page")
+    page, err := strconv.Atoi(pageStr)
+    if err != nil || page < 1 {
+        page = 1
+    }
+    const pageSize = 6
+    skip := int64((page - 1) * pageSize)
+
+	findOptions := options.Find()
+    if sortValue != "" {
+		switch sortValue {
+		case "name":
+			findOptions.SetSort(bson.D{{Key: "name", Value: 1}})
+		case "price":
+			findOptions.SetSort(bson.D{{Key: "price", Value: 1}})
+		}
+	}	
+
+	findOptions.SetSkip(skip)
+    findOptions.SetLimit(pageSize)
+
+
+	cursor, err := collection.Find(context.Background(), filter, findOptions)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.Background())
+
+	var courses []Courses
+	for cursor.Next(context.Background()) {
+		var course Courses
+		if err := cursor.Decode(&course); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		courses = append(courses, course)
+	}
+
+	if err := cursor.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse, err := json.Marshal(courses)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
 }
 
 func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {

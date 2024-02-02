@@ -1,0 +1,35 @@
+.header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    font-size: 24px;
+    font-weight: bold;
+}
+.header-right {
+    font-size: 18px;
+}
+.filter-form input,
+.filter-form button {
+    outline: none;
+    border: none;
+    border: 1px solid #000;
+    border-radius: 8px;
+}
+.course-list {
+    display: flex;
+    flex-wrap: wrap;
+    list-style-type: none;
+    padding: 0;
+}
+.course-list li {
+    flex: 0 0 33.3333%; /* Each item takes up one-third of the width */
+    box-sizing: border-box;
+    padding: 10px; /* Adjust padding as needed */
+    /* Add additional styling here */
+}

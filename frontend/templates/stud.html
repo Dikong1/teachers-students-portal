@@ -4,18 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student's Personal Account</title>
+    <link rel="stylesheet" href="../static/style/stud.css">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../static/style/stylechi.css">
+    <style>
+    </style>
 </head>
 <body>
-<div class="container mt-5">
-    <div class="child-personal-card mb-4">
-        <h2>{{.Name}} {{.Surname}}</h2>
-        <p><strong>Email:</strong> {{.Email}}</p>
-        <p><strong>Phone:</strong> {{.Phone}}</p>
+<div class="profile_container">
+    <div class="header">
+        <div class="header-left">{{.Name}} {{.Surname}}</div>
+        <div class="header-right">Student Teacher Portal</div>
+    </div>
+    <form class="filter-form pt-5 pb-3" action="/filter" method="get">
+        <label for="filter">Filter:</label>
+        <input type="text" id="filter" name="filter" placeholder="Enter filter">
+        <button type="submit">Apply Filter</button>
+
+        <label for="sort">Sort:</label>
+        <select id="sort" name="sort">
+            <option value="name">By Name</option>
+            <option value="price">By Price</option>
+        </select>
+        <button type="submit">Apply Sorting</button>
+
+        <label for="page">Page:</label>
+        <input type="number" id="page" name="page" min="1">
+        <button type="submit">Go</button>
+    </form>
+    <div class="courses">
+        <ul class="course-list">
+        </ul>
     </div>
 </div>
+    <script>
+        document.querySelector('.filter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const filterValue = document.getElementById('filter').value;
+            const sortValue = document.getElementById('sort').value;
+            const pageValue = document.getElementById('page').value || 1;
+            loadCourses(filterValue, sortValue, pageValue);
+        });
 
+        function loadCourses(filter = '', sort = '', page = 1) {
+            let url = '/api/courses';
+            const params = new URLSearchParams();
+            if (filter) params.append('filter', filter);
+            if (sort) params.append('sort', sort);
+            params.append('page', page);
+            url += '?' + params.toString();
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(courses => {
+                    console.log("Courses received:", courses);
+
+                    const coursesContainer = document.querySelector('.courses ul');
+                    coursesContainer.innerHTML = ''; 
+                    courses.forEach(course => {
+                        coursesContainer.innerHTML += `
+                            <li>
+                                <h3>${course.name}</h3>
+                                <p>Category: ${course.category}</p>
+                                <p>Description: ${course.description}</p>
+                                <p>Price: $${course.price}</p>
+                            </li>
+                        `;
+                    });
+                })
+                .catch(error => console.error('Error fetching courses:', error));
+        }
+
+        window.onload = () => loadCourses();
+    </script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>

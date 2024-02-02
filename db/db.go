@@ -25,7 +25,5 @@ func DbConnection() error {
 	}
 
 	fmt.Println("Connected to MongoDB!")
-
-	// Вернуть nil, если соединение успешно
 	return nil
 }

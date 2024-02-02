@@ -1,39 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gifts for Orphans</title>
+    <title>Student Teacher Portal</title>
     <link rel="stylesheet" type="text/css" href="../static/style/style.css">
+    <style>
+    </style>
 </head>
 <body>
-    <!-- Header Section -->
     <header>
         <div id="banner">
-            <!-- You can add an image or styled text for your banner here -->
             <h1>Welcome to Student Teacher Portal</h1>
         </div>
     </header>
 
     <div id="js-check"></div>
-
-    <!-- Main Content Section -->
     <main>
-        <!-- Mission Statement -->
-        <!-- <section id="mission-statement">
-            <p>Help us bring joy to orphans this New Year by becoming their Santa!</p>
-        </section> -->
-
-        <!-- Login/Signup Section -->
         <section id="auth-section">
-            <div id="volunteer-auth">
-                <h2>Teachers</h2>
-                <button onclick="location.href='/vollogin'">Login as Teacher</button>
-                <button onclick="location.href='/volreg'">Sign up as Teacher</button>
+            <div id="teacher-auth">
+                <img class="teach-img" src="../static/images/teach-cartoon.png" alt="">
+                <button onclick="location.href='/teachlog'">Login as Teacher</button>
+                <button onclick="location.href='/teachreg'">Sign up as Teacher</button>
             </div>
 
-            <div id="child-auth">
-                <h2>Students</h2>
-                <button onclick="location.href='/chilog'">Login as Student</button>
-                <button onclick="location.href='/chireg'">Sign up as Student</button>
+            <div id="student-auth">
+                <img class="stud-img" src="../static/images/stud-cartoon.png" alt="">
+                <button onclick="location.href='/studlog'">Login as Student</button>
+                <button onclick="location.href='/studreg'">Sign up as Student</button>
             </div>
         </section>
     </main>

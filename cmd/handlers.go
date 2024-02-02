@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"SantaWeb/db"
+	"Platform/db"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var store = sessions.NewCookieStore([]byte("your-secret-key"))
 
 type errorss struct {
 	ErrorCode int
@@ -52,19 +48,19 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 		var teacher Teacher
 		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&teacher)
 		if err != nil {
-			renderTemplate(w, "vollogin.html", incMsg)
+			renderTemplate(w, "teachlog.html", incMsg)
 			return
 		}
 
 		err = bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password))
 		if err != nil {
-			renderTemplate(w, "vollogin.html", incMsg)
+			renderTemplate(w, "teachlog.html", incMsg)
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/vol/%s", teacher.ID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/teach/%s", teacher.ID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
-		renderTemplate(w, "vollogin.html", nil)
+		renderTemplate(w, "teachlog.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -105,9 +101,9 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		insertedID := result.InsertedID.(primitive.ObjectID)
-		http.Redirect(w, r, fmt.Sprintf("/vol/%s", insertedID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/teach/%s", insertedID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
-		renderTemplate(w, "volreg.html", nil)
+		renderTemplate(w, "teachreg.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -125,19 +121,19 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 		var student Student
 		err := collection.FindOne(context.Background(), bson.M{"phone": phone}).Decode(&student)
 		if err != nil {
-			renderTemplate(w, "chilog.html", incMsg)
+			renderTemplate(w, "studlog.html", incMsg)
 			return
 		}
 
 		err = bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password))
 		if err != nil {
-			renderTemplate(w, "chilog.html", incMsg)
+			renderTemplate(w, "studlog.html", incMsg)
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/chil/%s", student.ID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
-		renderTemplate(w, "chilog.html", nil)
+		renderTemplate(w, "studlog.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -180,9 +176,9 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 
 		insertedID := result.InsertedID.(primitive.ObjectID)
 
-		http.Redirect(w, r, fmt.Sprintf("/chil/%s", insertedID.Hex()), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/stud/%s", insertedID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
-		renderTemplate(w, "chireg.html", nil)
+		renderTemplate(w, "studreg.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		ErrorHandler(w, r, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
@@ -216,7 +212,7 @@ func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderTemplate(w, "vol.html", teacher)
+	renderTemplate(w, "teach.html", teacher)
 }
 
 func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +229,7 @@ func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderTemplate(w, "chil.html", student)
+	renderTemplate(w, "stud.html", student)
 }
 
 func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -245,25 +241,6 @@ func sendJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func getChildIDFromSession(r *http.Request) (primitive.ObjectID, error) {
-	session, err := store.Get(r, "session-name")
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-
-	childID, ok := session.Values["childID"].(string)
-	if !ok {
-		return primitive.NilObjectID, errors.New("Child ID not found in session")
-	}
-
-	objID, err := primitive.ObjectIDFromHex(childID)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-
-	return objID, nil
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request, errCode int, msg string) {

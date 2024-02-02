@@ -1,4 +1,4 @@
-module SantaWeb
+module Platform
 
 go 1.18
 

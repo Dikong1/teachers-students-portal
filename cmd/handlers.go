@@ -10,11 +10,14 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var log = logrus.New()
 
 type errorss struct {
 	ErrorCode int
@@ -44,19 +47,20 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
-		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("teachers")
 		var teacher Teacher
-		err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&teacher)
-		if err != nil {
-			renderTemplate(w, "teachlog.html", incMsg)
+		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&teacher); err != nil {
+			// Log and handle the error
+			log.WithField("error", err).Error("Error finding teacher")
+			http.Error(w, "Invalid email or password", http.StatusBadRequest)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password))
-		if err != nil {
-			renderTemplate(w, "teachlog.html", incMsg)
+		if err := bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password)); err != nil {
+			// Log and handle the error
+			log.WithField("error", err).Error("Password comparison failed")
+			http.Error(w, "Invalid email or password", http.StatusBadRequest)
 			return
 		}
 
@@ -116,19 +120,20 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
-		incMsg := "Wrong password or phone"
 
 		collection := db.Client.Database("EduPortal").Collection("students")
 		var student Student
-		err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student)
-		if err != nil {
-			renderTemplate(w, "studlog.html", incMsg)
+		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
+			// Log and handle the error
+			log.WithField("error", err).Error("Error finding student")
+			http.Error(w, "Invalid email or password", http.StatusBadRequest)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password))
-		if err != nil {
-			renderTemplate(w, "studlog.html", incMsg)
+		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
+			// Log and handle the error
+			log.WithField("error", err).Error("Password comparison failed")
+			http.Error(w, "Invalid email or password", http.StatusBadRequest)
 			return
 		}
 
@@ -246,29 +251,41 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageStr := r.URL.Query().Get("page")
-    page, err := strconv.Atoi(pageStr)
-    if err != nil || page < 1 {
-        page = 1
-    }
-    const pageSize = 6
-    skip := int64((page - 1) * pageSize)
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	const pageSize = 6
+	skip := int64((page - 1) * pageSize)
 
 	findOptions := options.Find()
-    if sortValue != "" {
+	if sortValue != "" {
 		switch sortValue {
 		case "name":
 			findOptions.SetSort(bson.D{{Key: "name", Value: 1}})
 		case "price":
 			findOptions.SetSort(bson.D{{Key: "price", Value: 1}})
 		}
-	}	
+	}
 
 	findOptions.SetSkip(skip)
-    findOptions.SetLimit(pageSize)
+	findOptions.SetLimit(pageSize)
 
+	// LOGRUS OPERATION
+	log.WithFields(logrus.Fields{
+		"action": "fetch_data",
+		"filter": filterValue,
+		"sort":   sortValue,
+		"page":   page,
+	}).Info("Fetching data from database")
 
 	cursor, err := collection.Find(context.Background(), filter, findOptions)
 	if err != nil {
+		//LOGRUS OPERATION
+		log.WithFields(logrus.Fields{
+			"action": "fetch_error",
+			"error":  err.Error(),
+		}).Error("Error fetching data from database")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -278,6 +295,11 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 	for cursor.Next(context.Background()) {
 		var course Courses
 		if err := cursor.Decode(&course); err != nil {
+			//LOGRUS OPERATION
+			log.WithFields(logrus.Fields{
+				"action": "decode_error",
+				"error":  err.Error(),
+			}).Error("Error decoding course data")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -285,12 +307,22 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := cursor.Err(); err != nil {
+		//LOGRUS OPERATION
+		log.WithFields(logrus.Fields{
+			"action": "json_encode_error",
+			"error":  err.Error(),
+		}).Error("Error encoding courses to JSON")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	jsonResponse, err := json.Marshal(courses)
 	if err != nil {
+		//LOGRUS OPERATION
+		log.WithFields(logrus.Fields{
+			"action": "json_encode_error",
+			"error":  err.Error(),
+		}).Error("Error encoding courses to JSON")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -298,6 +330,11 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+
+	log.WithFields(logrus.Fields{
+		"action":     "data_fetched",
+		"numCourses": len(courses),
+	}).Info("Successfully fetched course data")
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request, errCode int, msg string) {

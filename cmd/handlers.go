@@ -19,11 +19,6 @@ import (
 
 var log = logrus.New()
 
-type errorss struct {
-	ErrorCode int
-	ErrorMsg  string
-}
-
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		log_.WithFields(logrus.Fields{

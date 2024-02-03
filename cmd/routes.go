@@ -17,8 +17,4 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/studlog", studLogHandler)
 	router.HandleFunc("/studreg", studRegHandler)
 	router.HandleFunc("/api/courses", getDataFromDatabase)
-
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ErrorHandler(w, r, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-	})
 }

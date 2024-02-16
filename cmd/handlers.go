@@ -8,7 +8,9 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,6 +20,8 @@ import (
 )
 
 var log = logrus.New()
+
+var jwtKey = []byte("jr4fpiKTdbWFaVbXa1fs0mpI20MoJDTU")
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -66,6 +70,28 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
+		
+		expirationTime := time.Now().Add(24 * time.Hour)
+		claims := &Claims{
+			UserID: teacher.ID.Hex(),
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expirationTime.Unix(),
+			},
+		}
+		
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(jwtKey)
+		
+		if err != nil {
+			http.Error(w, "Error signing token", http.StatusInternalServerError)
+			return
+		}
+		
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: expirationTime,
+		})
 
 		http.Redirect(w, r, fmt.Sprintf("/teach/%s", teacher.ID.Hex()), http.StatusSeeOther)
 	} else if r.Method == "GET" {
@@ -219,7 +245,34 @@ func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderTemplate(w, "teach.html", teacher)
+	var students []Student
+    studentCollection := db.Client.Database("EduPortal").Collection("students")
+    cursor, err := studentCollection.Find(context.Background(), bson.M{})
+    if err != nil {
+        log.WithField("error", err).Error("Error fetching students")
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+    defer cursor.Close(context.Background())
+
+    for cursor.Next(context.Background()) {
+        var student Student
+        if err = cursor.Decode(&student); err != nil {
+            log.WithField("error", err).Error("Error decoding student data")
+            continue
+        }
+        students = append(students, student)
+    }
+
+	data := struct {
+        Teacher  Teacher
+        Students []Student
+    }{
+        Teacher:  teacher,
+        Students: students,
+    }
+
+	renderTemplate(w, "teach.html", data)
 }
 
 func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -337,4 +390,43 @@ func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
 		"action":     "data_fetched",
 		"numCourses": len(courses),
 	}).Info("Successfully fetched course data")
+}
+
+func verifyToken(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		tknStr := c.Value
+		claims := &Claims{}
+
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if !tkn.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Set context values if needed
+		ctx := context.WithValue(r.Context(), "userID", claims.UserID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

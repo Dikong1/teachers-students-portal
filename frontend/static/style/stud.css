@@ -1,7 +1,12 @@
+body {
+    background-color: #471762;
+    font-family: 'Arial', sans-serif;
+}
+
 .header {
-    background-color: #333;
+    background-color: #842cb7; 
     color: #fff;
-    padding: 10px;
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -14,6 +19,41 @@
 .header-right {
     font-size: 18px;
 }
+
+.filter-form {
+    background-color: #e8f1f2;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-form label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.filter-form input,
+.filter-form select {
+    padding: 8px;
+    margin-right: 10px;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+}
+
+.filter-form button {
+    background-color: #842cb7; 
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.filter-form button:hover {
+    background-color: #5a1e7c; 
+}
+
 .filter-form input,
 .filter-form button {
     outline: none;
@@ -21,15 +61,102 @@
     border: 1px solid #000;
     border-radius: 8px;
 }
+.pagination {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.pagination a {
+    margin: 0 5px;
+    padding: 8px 16px;
+    background-color: #842cb7;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.pagination a:hover {
+    background-color: #0096c7;
+}
+
+.pagination a.active {
+    background-color: #023e8a;
+}
+
+.courses {
+    padding: 20px;
+}
+
 .course-list {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-around;
     list-style-type: none;
     padding: 0;
+    margin: 0;
 }
+
 .course-list li {
-    flex: 0 0 33.3333%; /* Each item takes up one-third of the width */
-    box-sizing: border-box;
-    padding: 10px; /* Adjust padding as needed */
-    /* Add additional styling here */
+    background-color: #ffd166; /* Orange background like the image */
+    border-radius: 8px;
+    margin-bottom: 20px;
+    width: calc(33.333% - 14px); /* 3 items per row, accounting for margin */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.course-list li:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.course-list img {
+    width: 100%;
+    height: auto;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.course-list h3 {
+    font-size: 1.5em;
+    color: #333;
+    text-align: center;
+    padding: 0.5em;
+    margin: 0;
+    background-color: transparent;
+    width: 100%;
+}
+
+.course-list p {
+    padding: 0 1em;
+    text-align: center;
+}
+
+.course-list button {
+    background-color: #06d6a0;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    margin: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.course-list button:hover {
+    background-color: #048a81;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .course-list li {
+        width: calc(50% - 14px); /* 2 items per row */
+    }
+}
+
+@media (max-width: 480px) {
+    .course-list li {
+        width: calc(100% - 14px); /* 1 item per row */
+    }
 }

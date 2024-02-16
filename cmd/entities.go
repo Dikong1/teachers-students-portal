@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,4 +29,10 @@ type Courses struct {
 	Description string             `json:"description" bson:"description"`
 	Category    string             `json:"category" bson:"category"`
 	Price       float64            `json:"price" bson:"price"`
+	Url         string             `json:"url" bson:"url"`
+}
+
+type Claims struct {
+	UserID string `json:"userid"`
+	jwt.StandardClaims
 }

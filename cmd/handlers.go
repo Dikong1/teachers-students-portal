@@ -3,7 +3,11 @@ package cmd
 import (
 	"Platform/db"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"github.com/mailgun/mailgun-go/v4"
+	"github.com/pkg/errors"
 	"html/template"
 	"net/http"
 	"time"
@@ -19,6 +23,21 @@ import (
 var log = logrus.New()
 
 var jwtKey = []byte("jr4fpiKTdbWFaVbXa1fs0mpI20MoJDTU")
+
+type contextKey int
+
+const (
+	contextKeyUserID contextKey = iota
+)
+
+//var (
+//	mgDomain = "sandboxa41f583f199d4426ba6bf73b389adb01.mailgun.org"
+//	mgAPIKey = "342b8de96af2377ecdfe3008aafbea38-b7b36bc2-a28e5702"
+//)
+
+var (
+	verificationTokens = make(map[string]string)
+)
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
@@ -111,6 +130,8 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var tempTeacher Teacher // Temporary global variable to store teacher data
+
 func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		firstName := r.FormValue("firstName")
@@ -119,6 +140,17 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		phone := r.FormValue("phone")
 		password := r.FormValue("password")
 
+		// Generate a random verification token
+		verificationToken, err := generateRandomToken()
+		if err != nil {
+			log_.WithField("error", err).Error("Error generating verification token")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Store the verification token along with the user's email address
+		verificationTokens[email] = verificationToken
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			log.WithField("error", err).Error("Error generating password hash")
@@ -126,7 +158,8 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		teacher := Teacher{
+		// Store the teacher data in the temporary global variable
+		tempTeacher = Teacher{
 			Name:     firstName,
 			Surname:  lastName,
 			Email:    email,
@@ -134,77 +167,164 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			Password: string(hashedPassword),
 		}
 
-		collection := db.Client.Database("EduPortal").Collection("teachers")
-
-		result, err := collection.InsertOne(context.Background(), teacher)
+		// Send verification email
+		err = sendVerificationEmail(email, verificationToken)
 		if err != nil {
-			log.WithField("error", err).Error("Error inserting teacher")
-			http.Error(w, "Error inserting teacher", http.StatusInternalServerError)
+			log_.WithField("error", err).Error("Error sending verification email")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		insertedID := result.InsertedID.(primitive.ObjectID)
-		http.Redirect(w, r, fmt.Sprintf("/teach/%s", insertedID.Hex()), http.StatusSeeOther)
+		// Render a page indicating that the verification email has been sent
+		renderTemplate(w, "verification_pending.html", nil)
+		return
 	} else if r.Method == "GET" {
 		renderTemplate(w, "teachreg.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 }
 
-func studLogHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method == "POST" {
-        email := r.FormValue("email")
-        password := r.FormValue("password")
+func verifyHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract the token and email from the query parameters
+	token := r.URL.Query().Get("token")
+	email := r.URL.Query().Get("email")
 
-        collection := db.Client.Database("EduPortal").Collection("students")
-        var student Student
-        if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
-            log.WithField("error", err).Error("Error finding student")
-            http.Error(w, "Cannot find email", http.StatusBadRequest)
-            return
-        }
-
-        if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
-            log.WithField("error", err).Error("Password comparison failed")
-            http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
-            return
-        }
-
-        expirationTime := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
-        claims := &Claims{
-            UserID: student.ID.Hex(),
-            StandardClaims: jwt.StandardClaims{
-                ExpiresAt: expirationTime.Unix(),
-            },
-        }
-
-        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-        tokenString, err := token.SignedString(jwtKey)
-        if err != nil {
-            log.WithField("error", err).Error("Error signing token")
-            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-            return
-        }
-
-        http.SetCookie(w, &http.Cookie{
-            Name:    "token",
-            Value:   tokenString,
-            Expires: expirationTime,
-        })
-
-        http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
-    } else if r.Method == "GET" {
-        renderTemplate(w, "studlog.html", nil)
-    } else {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-        return
-    }
+	// Perform verification using the handleVerification function
+	handleVerification(w, r, token, email)
 }
 
+func sendVerificationEmail(email, token string) error {
+	// Create a new Mailgun client with your domain and API key
+	mg := mailgun.NewMailgun("sandboxa41f583f199d4426ba6bf73b389adb01.mailgun.org", "342b8de96af2377ecdfe3008aafbea38-b7b36bc2-a28e5702")
+
+	// Compose the email body with the verification link containing the token
+	body := fmt.Sprintf("Click the link below to verify your email:\n\nhttp://localhost:3000/verify?token=%s&email=%s", token, email)
+
+	// Compose the email message
+	message := mg.NewMessage(
+		"Excited User <mailgun@your-domain.com>", // Replace with sender email address
+		"Email Verification",                     // Email subject
+		body,                                     // Email body
+		email,                                    // Recipient email address
+	)
+
+	// Send the email using the Mailgun client
+	_, _, err := mg.Send(context.Background(), message)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func handleVerification(w http.ResponseWriter, r *http.Request, token, email string) {
+	// Check if the token is valid
+	if storedToken, ok := verificationTokens[email]; ok && storedToken == token {
+		// Token is valid, store the teacher data in the database
+		err := storeTeacherData(tempTeacher)
+		if err != nil {
+			log_.WithField("error", err).Error("Error storing teacher data")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Clear the temporary global variable
+		tempTeacher = Teacher{}
+
+		// Redirect the user to a page indicating successful verification
+		http.Redirect(w, r, "/teachlog", http.StatusSeeOther)
+		return
+	}
+
+	// Token is invalid or expired
+	// Redirect the user to a page indicating failed verification
+	http.Redirect(w, r, "/verification-failure", http.StatusSeeOther)
+}
+
+func storeTeacherData(teacher Teacher) error {
+	collection := db.Client.Database("EduPortal").Collection("teachers")
+
+	result, err := collection.InsertOne(context.Background(), teacher)
+	if err != nil {
+		return err
+	}
+
+	log_.Info("Teacher data stored successfully:", result.InsertedID)
+	return nil
+}
+
+func generateRandomToken() (string, error) {
+	// Define the length of the token (adjust as needed)
+	tokenLength := 32
+
+	// Create a byte slice to store the random token
+	tokenBytes := make([]byte, tokenLength)
+
+	// Read random bytes into the tokenBytes slice
+	_, err := rand.Read(tokenBytes)
+	if err != nil {
+		return "", errors.New("error generating random token: " + err.Error())
+	}
+
+	// Encode the random bytes to base64 to create a string token
+	token := base64.URLEncoding.EncodeToString(tokenBytes)
+
+	return token, nil
+}
+
+func studLogHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+
+		collection := db.Client.Database("EduPortal").Collection("students")
+		var student Student
+		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
+			log.WithField("error", err).Error("Error finding student")
+			http.Error(w, "Cannot find email", http.StatusBadRequest)
+			return
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
+			log.WithField("error", err).Error("Password comparison failed")
+			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
+			return
+		}
+
+		expirationTime := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
+		claims := &Claims{
+			UserID: student.ID.Hex(),
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expirationTime.Unix(),
+			},
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(jwtKey)
+		if err != nil {
+			log.WithField("error", err).Error("Error signing token")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: expirationTime,
+		})
+
+		http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
+	} else if r.Method == "GET" {
+		renderTemplate(w, "studlog.html", nil)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+}
 
 func studRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -356,7 +476,7 @@ func verifyToken(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "userID", claims.UserID)
+		ctx := context.WithValue(r.Context(), contextKeyUserID, claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

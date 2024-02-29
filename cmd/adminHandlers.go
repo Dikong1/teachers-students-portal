@@ -18,7 +18,6 @@ func getAddingStudentPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func addTeacherHandler(w http.ResponseWriter, r *http.Request) {
-	// First, parse the form
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
@@ -53,6 +52,47 @@ func addTeacherHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.InsertOne(context.Background(), newTeacher)
 	if err != nil {
 		http.Error(w, "Error saving teacher: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+func addStudentHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err!= nil {
+        http.Error(w, "Error parsing form", http.StatusBadRequest)
+        return
+    }
+
+    name := r.FormValue("name")
+    lastName := r.FormValue("lastName")
+    email := r.FormValue("email")
+    phone := r.FormValue("phone")
+    password := r.FormValue("password")
+
+    if name == "" || email == "" {
+        http.Error(w, "Name and email are required", http.StatusBadRequest)
+        return
+    }
+
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err!= nil {
+        http.Error(w, "Error hashing password", http.StatusInternalServerError)
+        return
+    }
+
+	newStudent := Student{
+		Name:     name,
+        Surname:  lastName,
+        Email:    email,
+        Phone:    phone,
+        Password: string(hashedPassword),
+	}
+
+	collection := db.Client.Database("EduPortal").Collection("students")
+	_, err = collection.InsertOne(context.Background(), newStudent)
+	if err != nil {
+		http.Error(w, "Error saving student: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

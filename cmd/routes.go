@@ -20,11 +20,9 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/stud/{id}", verifyToken(studPersonalPageHandler)).Methods("GET")
 	router.HandleFunc("/api/courses", verifyToken((getDataFromDatabase))).Methods("GET")
 
-	router.HandleFunc("/add-student", addStudentHandler).Methods("POST")
-	router.HandleFunc("/delete-student", deleteStudentHandler).Methods("POST")
-
 	router.HandleFunc("/admin", AdminPanelHandler).Methods("GET")
 	router.HandleFunc("/admin/add-teacher", getAddingTeacherPage).Methods("GET")
 	router.HandleFunc("/admin/add-teacher", addTeacherHandler).Methods("POST")
     router.HandleFunc("/admin/add-student", getAddingStudentPage).Methods("GET")
+    router.HandleFunc("/admin/add-student", addStudentHandler).Methods("POST")
 }

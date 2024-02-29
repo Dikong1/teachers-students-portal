@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adding a teacher</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Add New Teacher</h1>
+        <form action="/admin/add-teacher" method="post">
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="text" name="lastName" placeholder="Last Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="tel" name="phone" placeholder="Phone">
+            <input type="password" name="password" placeholder="Password">
+            
+            <button type="submit" class="btn btn-primary">Add Teacher</button>
+        </form>
+    </div>
+</body>
+</html>

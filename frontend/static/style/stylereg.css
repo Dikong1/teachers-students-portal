@@ -47,13 +47,63 @@ button {
     width: 100%;
     padding: 10px;
     border: none;
-    background-color: #0056b3;
+    background-color: #ef490d;
     color: white;
     font-size: 16px;
     border-radius: 4px;
     cursor: pointer;
 }
-
 button:hover {
-    background-color: #004494;
+    background-color: #740101;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+}
+
+.form-main {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form, .image-stud {
+    flex: 1;
+}
+
+.form {
+    padding-right: 20px;
+}
+
+.image-stud {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+}
+
+.image-stud img {
+    max-width: 100%;
+    height: auto;
+}
+
+.image-teach {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-teach img {
+    width: 370px;
+    height: 382px;
 }

@@ -1,0 +1,61 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Arial', sans-serif;
+}
+
+.container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 15px;
+}
+
+.vol-teacher-card, .student-card {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.vol-teacher-card h2, .student-card h4 {
+    color: #007bff;
+}
+
+p {
+    color: #333;
+    line-height: 1.5;
+}
+
+form {
+    margin-top: 20px;
+    background-color: #f7f7f7;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+form input{
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}

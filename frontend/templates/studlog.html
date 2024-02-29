@@ -4,26 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Login</title>
-    <!-- Link to the CSS file -->
     <link rel="stylesheet" href="../static/style/stylereg.css">
 </head>
 <body>
     <div class="container">
         <h1>Student Login</h1>
-        <form id="loginForm registrationForm" method="post">
-            <div class="form-group">
-                <label for="phone">Phone Number:</label>
-                <input type="tel" id="phone" name="phone" required>
+        <form class="form-main" id="loginForm registrationForm" method="post">   
+            <div class="form">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="tel" id="email" name="email" required>
+                </div>
+    
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="error">
+                    {{ .}}
+                </div>
+                <button type="submit">Login</button>
             </div>
-
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+            <div class="image-stud">
+                <img src="../static/images/stud-cartoon.png" alt="">
             </div>
-            <div class="error">
-                {{ .}}
-            </div>
-            <button type="submit">Login</button>
         </form>
     </div>
 </body>

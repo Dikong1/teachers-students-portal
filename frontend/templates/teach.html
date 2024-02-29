@@ -3,26 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose a Child to Gift</title>
+    <title>Teacher Page</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../static/style/stylevol.css">
+    <link rel="stylesheet" href="../static/style/styleteach.css">
 </head>
 <body>
 <div class="container mt-5">
-    <div class="vol-personal-card mb-4">
-        <h2>{{.Name}} {{.Surname}}</h2>
+    <h3>Teacher</h3>
+    <div class="vol-teacher-card mb-4">
+        <h2>{{.Teacher.Name}} {{.Teacher.Surname}}</h2>
+        <p><strong>Email:</strong> {{.Teacher.Email}}</p>
+        <p><strong>Phone:</strong> {{.Teacher.Phone}}</p>
+    </div>    
+
+    <h3>Students</h3>
+    {{range .Students}}
+    <div class="student-card mb-2">
+        <h4>{{.Name}} {{.Surname}}</h4>
         <p><strong>Email:</strong> {{.Email}}</p>
         <p><strong>Phone:</strong> {{.Phone}}</p>
+        <form action="/delete-student" method="post">
+            <input type="hidden" name="studentID" value="{{.ID.Hex}}">
+            <input type="hidden" name="teacherID" value="{{$.Teacher.ID.Hex}}">
+            <button type="submit">Delete Student</button>
+        </form>
     </div>
+    {{end}}
 
+    <form action="/add-student" method="post">
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="text" name="surname" placeholder="Surname" required>
+        <input type="email" name="email" placeholder="Email">
+        <input type="tel" name="phone" placeholder="Phone">
+        <input type="password" name="password" placeholder="Password">
+        <input type="hidden" name="teacherID" value="{{.Teacher.ID.Hex}}">
+        <button type="submit">Add Student</button>
+    </form>
+    
 </div>
 
-<!-- Bootstrap JS, Popper.js, and jQuery -->
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-
-<script src="../static/js/script.js"></script>
 </body>
 </html>

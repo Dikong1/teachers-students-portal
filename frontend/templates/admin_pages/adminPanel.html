@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Admin Panel</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/admin">Admin Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/add-teacher">Add Teacher</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/add-student">Add Student</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Admin Panel</h1>
+
+        <section>
+            <h2>Teachers</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Teachers}}
+                    <tr>
+                        <td>{{.Name}}</td>
+                        <td>{{.Surname}}</td>
+                        <td>{{.Email}}</td>
+                        <td>{{.Phone}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            <!-- Form for adding a new teacher -->
+            <!-- ... -->
+        </section>
+
+        <section>
+            <h2>Students</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Students}}
+                    <tr>
+                        <td>{{.Name}}</td>
+                        <td>{{.Surname}}</td>
+                        <td>{{.Email}}</td>
+                        <td>{{.Phone}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            <!-- Form for adding a new student -->
+            <!-- ... -->
+        </section>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

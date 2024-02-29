@@ -3,11 +3,9 @@ package cmd
 import (
 	"Platform/db"
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -15,13 +13,23 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var log = logrus.New()
 
 var jwtKey = []byte("jr4fpiKTdbWFaVbXa1fs0mpI20MoJDTU")
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+		Path:    "/",
+	})
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -70,7 +78,7 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
-		
+
 		expirationTime := time.Now().Add(24 * time.Hour)
 		claims := &Claims{
 			UserID: teacher.ID.Hex(),
@@ -78,15 +86,15 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 				ExpiresAt: expirationTime.Unix(),
 			},
 		}
-		
+
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		tokenString, err := token.SignedString(jwtKey)
-		
+
 		if err != nil {
 			http.Error(w, "Error signing token", http.StatusInternalServerError)
 			return
 		}
-		
+
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
@@ -147,33 +155,56 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func studLogHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		email := r.FormValue("email")
-		password := r.FormValue("password")
+    if r.Method == "POST" {
+        email := r.FormValue("email")
+        password := r.FormValue("password")
 
-		collection := db.Client.Database("EduPortal").Collection("students")
-		var student Student
-		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
-			log.WithField("error", err).Error("Error finding student")
-			http.Error(w, "Cannot find email", http.StatusBadRequest)
-			return
-		}
+        collection := db.Client.Database("EduPortal").Collection("students")
+        var student Student
+        if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
+            log.WithField("error", err).Error("Error finding student")
+            http.Error(w, "Cannot find email", http.StatusBadRequest)
+            return
+        }
 
-		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
-			log.WithField("error", err).Error("Password comparison failed")
-			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
-			return
-		}
+        if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
+            log.WithField("error", err).Error("Password comparison failed")
+            http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
+            return
+        }
 
-		http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
-	} else if r.Method == "GET" {
-		renderTemplate(w, "studlog.html", nil)
-	} else {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
+        expirationTime := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
+        claims := &Claims{
+            UserID: student.ID.Hex(),
+            StandardClaims: jwt.StandardClaims{
+                ExpiresAt: expirationTime.Unix(),
+            },
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        tokenString, err := token.SignedString(jwtKey)
+        if err != nil {
+            log.WithField("error", err).Error("Error signing token")
+            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+            return
+        }
+
+        http.SetCookie(w, &http.Cookie{
+            Name:    "token",
+            Value:   tokenString,
+            Expires: expirationTime,
+        })
+
+        http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
+    } else if r.Method == "GET" {
+        renderTemplate(w, "studlog.html", nil)
+    } else {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+        return
+    }
 }
+
 
 func studRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -246,31 +277,31 @@ func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var students []Student
-    studentCollection := db.Client.Database("EduPortal").Collection("students")
-    cursor, err := studentCollection.Find(context.Background(), bson.M{})
-    if err != nil {
-        log.WithField("error", err).Error("Error fetching students")
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
-    defer cursor.Close(context.Background())
+	studentCollection := db.Client.Database("EduPortal").Collection("students")
+	cursor, err := studentCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		log.WithField("error", err).Error("Error fetching students")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.Background())
 
-    for cursor.Next(context.Background()) {
-        var student Student
-        if err = cursor.Decode(&student); err != nil {
-            log.WithField("error", err).Error("Error decoding student data")
-            continue
-        }
-        students = append(students, student)
-    }
+	for cursor.Next(context.Background()) {
+		var student Student
+		if err = cursor.Decode(&student); err != nil {
+			log.WithField("error", err).Error("Error decoding student data")
+			continue
+		}
+		students = append(students, student)
+	}
 
 	data := struct {
-        Teacher  Teacher
-        Students []Student
-    }{
-        Teacher:  teacher,
-        Students: students,
-    }
+		Teacher  Teacher
+		Students []Student
+	}{
+		Teacher:  teacher,
+		Students: students,
+	}
 
 	renderTemplate(w, "teach.html", data)
 }
@@ -290,106 +321,6 @@ func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate(w, "stud.html", student)
-}
-
-func getDataFromDatabase(w http.ResponseWriter, r *http.Request) {
-	collection := db.Client.Database("EduCourses").Collection("courses")
-
-	filterValue := r.URL.Query().Get("filter")
-	sortValue := r.URL.Query().Get("sort")
-
-	var filter bson.M
-	if filterValue != "" {
-		filter = bson.M{"category": bson.M{"$regex": filterValue, "$options": "i"}}
-	} else {
-		filter = bson.M{}
-	}
-
-	pageStr := r.URL.Query().Get("page")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
-	}
-	const pageSize = 6
-	skip := int64((page - 1) * pageSize)
-
-	findOptions := options.Find()
-	if sortValue != "" {
-		switch sortValue {
-		case "name":
-			findOptions.SetSort(bson.D{{Key: "name", Value: 1}})
-		case "price":
-			findOptions.SetSort(bson.D{{Key: "price", Value: 1}})
-		}
-	}
-
-	findOptions.SetSkip(skip)
-	findOptions.SetLimit(pageSize)
-
-	// LOGRUS OPERATION
-	log.WithFields(logrus.Fields{
-		"action": "fetch_data",
-		"filter": filterValue,
-		"sort":   sortValue,
-		"page":   page,
-	}).Info("Fetching data from database")
-
-	cursor, err := collection.Find(context.Background(), filter, findOptions)
-	if err != nil {
-		//LOGRUS OPERATION
-		log.WithFields(logrus.Fields{
-			"action": "fetch_error",
-			"error":  err.Error(),
-		}).Error("Error fetching data from database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cursor.Close(context.Background())
-
-	var courses []Courses
-	for cursor.Next(context.Background()) {
-		var course Courses
-		if err := cursor.Decode(&course); err != nil {
-			//LOGRUS OPERATION
-			log.WithFields(logrus.Fields{
-				"action": "decode_error",
-				"error":  err.Error(),
-			}).Error("Error decoding course data")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		courses = append(courses, course)
-	}
-
-	if err := cursor.Err(); err != nil {
-		//LOGRUS OPERATION
-		log.WithFields(logrus.Fields{
-			"action": "json_encode_error",
-			"error":  err.Error(),
-		}).Error("Error encoding courses to JSON")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	jsonResponse, err := json.Marshal(courses)
-	if err != nil {
-		//LOGRUS OPERATION
-		log.WithFields(logrus.Fields{
-			"action": "json_encode_error",
-			"error":  err.Error(),
-		}).Error("Error encoding courses to JSON")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
-
-	log.WithFields(logrus.Fields{
-		"action":     "data_fetched",
-		"numCourses": len(courses),
-	}).Info("Successfully fetched course data")
 }
 
 func verifyToken(next http.HandlerFunc) http.HandlerFunc {
@@ -425,7 +356,6 @@ func verifyToken(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Set context values if needed
 		ctx := context.WithValue(r.Context(), "userID", claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

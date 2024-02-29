@@ -13,7 +13,11 @@
 <div class="profile_container">
     <div class="header">
         <div class="header-left">{{.Name}} {{.Surname}}</div>
-        <div class="header-right">Student Teacher Portal</div>
+        <div class="header-right">
+            Student Teacher Portal
+            <a href="/logout" class="logout-button">Logout</a>
+        </div>
+        
     </div>
     <form class="filter-form pt-5 pb-3" action="/filter" method="get">
         <label for="filter">Filter:</label>

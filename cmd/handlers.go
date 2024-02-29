@@ -13,12 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var log = logrus.New()
 
 var jwtKey = []byte("jr4fpiKTdbWFaVbXa1fs0mpI20MoJDTU")
+
+type contextKey int
+
+const (
+	contextKeyUserID contextKey = iota
+)
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
@@ -155,56 +162,55 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func studLogHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method == "POST" {
-        email := r.FormValue("email")
-        password := r.FormValue("password")
+	if r.Method == "POST" {
+		email := r.FormValue("email")
+		password := r.FormValue("password")
 
-        collection := db.Client.Database("EduPortal").Collection("students")
-        var student Student
-        if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
-            log.WithField("error", err).Error("Error finding student")
-            http.Error(w, "Cannot find email", http.StatusBadRequest)
-            return
-        }
+		collection := db.Client.Database("EduPortal").Collection("students")
+		var student Student
+		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
+			log.WithField("error", err).Error("Error finding student")
+			http.Error(w, "Cannot find email", http.StatusBadRequest)
+			return
+		}
 
-        if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
-            log.WithField("error", err).Error("Password comparison failed")
-            http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
-            return
-        }
+		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
+			log.WithField("error", err).Error("Password comparison failed")
+			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
+			return
+		}
 
-        expirationTime := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
-        claims := &Claims{
-            UserID: student.ID.Hex(),
-            StandardClaims: jwt.StandardClaims{
-                ExpiresAt: expirationTime.Unix(),
-            },
-        }
+		expirationTime := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
+		claims := &Claims{
+			UserID: student.ID.Hex(),
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expirationTime.Unix(),
+			},
+		}
 
-        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-        tokenString, err := token.SignedString(jwtKey)
-        if err != nil {
-            log.WithField("error", err).Error("Error signing token")
-            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-            return
-        }
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(jwtKey)
+		if err != nil {
+			log.WithField("error", err).Error("Error signing token")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
-        http.SetCookie(w, &http.Cookie{
-            Name:    "token",
-            Value:   tokenString,
-            Expires: expirationTime,
-        })
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: expirationTime,
+		})
 
-        http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
-    } else if r.Method == "GET" {
-        renderTemplate(w, "studlog.html", nil)
-    } else {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-        return
-    }
+		http.Redirect(w, r, fmt.Sprintf("/stud/%s", student.ID.Hex()), http.StatusSeeOther)
+	} else if r.Method == "GET" {
+		renderTemplate(w, "studlog.html", nil)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
 }
-
 
 func studRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -310,17 +316,39 @@ func studPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	studentID := vars["id"]
 
-	var student Student
-	collection := db.Client.Database("EduPortal").Collection("students")
-	objID, _ := primitive.ObjectIDFromHex(studentID)
+	// Log the student ID being accessed
+	log.WithField("studentID", studentID).Info("Accessing student page")
 
-	err := collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&student)
+	collection := db.Client.Database("EduPortal").Collection("students")
+	objID, err := primitive.ObjectIDFromHex(studentID)
 	if err != nil {
-		http.Error(w, "student not found", http.StatusNotFound)
+		log.WithField("error", err).Error("Invalid student ID format")
+		http.Error(w, "Invalid student ID format", http.StatusBadRequest)
 		return
 	}
 
-	renderTemplate(w, "stud.html", student)
+	var student Student
+	err = collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&student)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.WithField("studentID", studentID).Warn("No student found with given ID")
+			http.Error(w, "No student found", http.StatusNotFound)
+		} else {
+			log.WithField("error", err).Error("Error finding student")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Log successful data retrieval
+	log.WithField("student", student).Info("Successfully retrieved student data")
+
+	err = renderTemplate(w, "stud.html", student)
+	if err != nil {
+		log.WithField("error", err).Error("Error rendering template")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func verifyToken(next http.HandlerFunc) http.HandlerFunc {
@@ -356,7 +384,7 @@ func verifyToken(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "userID", claims.UserID)
+		ctx := context.WithValue(r.Context(), contextKeyUserID, claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

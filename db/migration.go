@@ -8,7 +8,7 @@ import (
 
 func CreateIndexes() error {
 
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	clientOptions := options.Client().ApplyURI("mongodb+srv://azatabdirashituly:20feb2005@cluster0.sellypx.mongodb.net/")
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		return err

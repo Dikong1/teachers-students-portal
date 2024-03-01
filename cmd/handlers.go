@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"html/template"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -30,10 +31,10 @@ const (
 	contextKeyUserID contextKey = iota
 )
 
-//var (
-//	mgDomain = "sandboxa41f583f199d4426ba6bf73b389adb01.mailgun.org"
-//	mgAPIKey = "342b8de96af2377ecdfe3008aafbea38-b7b36bc2-a28e5702"
-//)
+var (
+	mgDomain = os.Getenv("MG_DOMAIN")
+	mgAPIKey = os.Getenv("MG_API_KEY")
+)
 
 var (
 	verificationTokens = make(map[string]string)
@@ -168,7 +169,7 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Send verification email
-		err = sendVerificationEmail(email, verificationToken)
+		err = sendVerificationEmail(email, verificationToken, "teacher")
 		if err != nil {
 			log_.WithField("error", err).Error("Error sending verification email")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -191,17 +192,24 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract the token and email from the query parameters
 	token := r.URL.Query().Get("token")
 	email := r.URL.Query().Get("email")
+	who := r.URL.Query().Get("who")
 
 	// Perform verification using the handleVerification function
-	handleVerification(w, r, token, email)
+	handleVerification(w, r, token, email, who)
 }
 
-func sendVerificationEmail(email, token string) error {
+func verifyFailureHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		renderTemplate(w, "verification_failure.html", nil)
+	}
+}
+
+func sendVerificationEmail(email, token string, who string) error {
 	// Create a new Mailgun client with your domain and API key
-	mg := mailgun.NewMailgun("sandboxa41f583f199d4426ba6bf73b389adb01.mailgun.org", "342b8de96af2377ecdfe3008aafbea38-b7b36bc2-a28e5702")
+	mg := mailgun.NewMailgun(mgDomain, mgAPIKey)
 
 	// Compose the email body with the verification link containing the token
-	body := fmt.Sprintf("Click the link below to verify your email:\n\nhttp://localhost:3000/verify?token=%s&email=%s", token, email)
+	body := fmt.Sprintf("Click the link below to verify your email:\n\nhttp://localhost:3000/verify?token=%s&email=%s&who=%s", token, email, who)
 
 	// Compose the email message
 	message := mg.NewMessage(
@@ -220,22 +228,38 @@ func sendVerificationEmail(email, token string) error {
 	return nil
 }
 
-func handleVerification(w http.ResponseWriter, r *http.Request, token, email string) {
+func handleVerification(w http.ResponseWriter, r *http.Request, token, email string, who string) {
 	// Check if the token is valid
 	if storedToken, ok := verificationTokens[email]; ok && storedToken == token {
 		// Token is valid, store the teacher data in the database
-		err := storeTeacherData(tempTeacher)
-		if err != nil {
-			log_.WithField("error", err).Error("Error storing teacher data")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
+
+		if who == "teacher" {
+			err := storeTeacherData(tempTeacher)
+			if err != nil {
+				log_.WithField("error", err).Error("Error storing teacher data")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		} else if who == "student" {
+			err := storeStudentData(tempStudent)
+			if err != nil {
+				log_.WithField("error", err).Error("Error storing student data")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
 		}
 
 		// Clear the temporary global variable
 		tempTeacher = Teacher{}
+		tempStudent = Student{}
 
 		// Redirect the user to a page indicating successful verification
-		http.Redirect(w, r, "/teachlog", http.StatusSeeOther)
+		if who == "teacher" {
+			http.Redirect(w, r, "/teachlog", http.StatusSeeOther)
+		} else if who == "student" {
+			http.Redirect(w, r, "/studlog", http.StatusSeeOther)
+		}
+
 		return
 	}
 
@@ -256,6 +280,18 @@ func storeTeacherData(teacher Teacher) error {
 	return nil
 }
 
+func storeStudentData(student Student) error {
+	collection := db.Client.Database("EduPortal").Collection("students")
+
+	result, err := collection.InsertOne(context.Background(), student)
+	if err != nil {
+		return err
+	}
+
+	log_.Info("Student data stored successfully:", result.InsertedID)
+	return nil
+}
+
 func generateRandomToken() (string, error) {
 	// Define the length of the token (adjust as needed)
 	tokenLength := 32
@@ -271,6 +307,7 @@ func generateRandomToken() (string, error) {
 
 	// Encode the random bytes to base64 to create a string token
 	token := base64.URLEncoding.EncodeToString(tokenBytes)
+	fmt.Println(token)
 
 	return token, nil
 }
@@ -326,6 +363,8 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var tempStudent Student
+
 func studRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		firstName := r.FormValue("firstName")
@@ -334,6 +373,17 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 		phone := r.FormValue("phone")
 		password := r.FormValue("password")
 
+		// Generate a random verification token
+		verificationToken, err := generateRandomToken()
+		if err != nil {
+			log_.WithField("error", err).Error("Error generating verification token")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Store the verification token along with the user's email address
+		verificationTokens[email] = verificationToken
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			log.WithField("error", err).Error("Error generating password hash")
@@ -341,7 +391,8 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		student := Student{
+		// Store the student data in the temporary global variable while verification
+		tempStudent = Student{
 			Name:     firstName,
 			Surname:  lastName,
 			Email:    email,
@@ -349,23 +400,22 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 			Password: string(hashedPassword),
 		}
 
-		collection := db.Client.Database("EduPortal").Collection("students")
-
-		result, err := collection.InsertOne(context.Background(), student)
+		// Send verification email
+		err = sendVerificationEmail(email, verificationToken, "student")
 		if err != nil {
-			log.WithField("error", err).Error("Error inserting stdent")
-			http.Error(w, "Error inserting student", http.StatusInternalServerError)
+			log_.WithField("error", err).Error("Error sending verification email")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		insertedID := result.InsertedID.(primitive.ObjectID)
-
-		http.Redirect(w, r, fmt.Sprintf("/stud/%s", insertedID.Hex()), http.StatusSeeOther)
+		// Render a page indicating that the verification email has been sent
+		renderTemplate(w, "verification_pending.html", nil)
+		return
 	} else if r.Method == "GET" {
 		renderTemplate(w, "studreg.html", nil)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 }

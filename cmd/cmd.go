@@ -3,6 +3,8 @@ package cmd
 import (
 	"Platform/db"
 	"context"
+	"fmt"
+	"github.com/joho/godotenv"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +25,11 @@ func RunServer() {
 			"action": "database_connection",
 			"status": "failed",
 		}).Fatal("Database connection failed: ", err)
+	}
+
+	err1 := godotenv.Load(".env")
+	if err1 != nil {
+		fmt.Println("Error loading .env file:", err)
 	}
 
 	router := mux.NewRouter()

@@ -21,6 +21,7 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/courses", verifyToken((getDataFromDatabase))).Methods("GET")
 
 	router.HandleFunc("/verify", verifyHandler).Methods("GET")
+	router.HandleFunc("/verification-failure", verifyFailureHandler).Methods("GET")
 
 	router.HandleFunc("/admin", AdminPanelHandler).Methods("GET")
 	router.HandleFunc("/admin/add-teacher", getAddingTeacherPage).Methods("GET")

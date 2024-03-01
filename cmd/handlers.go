@@ -52,7 +52,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		log_.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"action": "homeHandler",
 			"method": r.Method,
 		}).Error("Method not allowed")
@@ -60,7 +60,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path != "/" {
-		log_.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"action": "homeHandler",
 			"path":   r.URL.Path,
 		}).Error("Not found")
@@ -69,7 +69,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err := renderTemplate(w, "home.html", nil)
 	if err != nil {
-		log_.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"action": "homeHandler",
 			"error":  err,
 		}).Error("Internal server error")
@@ -87,13 +87,13 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 		collection := db.Client.Database("EduPortal").Collection("teachers")
 		var teacher Teacher
 		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&teacher); err != nil {
-			log.WithField("error", err).Error("Error finding teacher")
+			Log.WithField("error", err).Error("Error finding teacher")
 			http.Error(w, "Cannot find email", http.StatusBadRequest)
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(teacher.Password), []byte(password)); err != nil {
-			log.WithField("error", err).Error("Password comparison failed")
+			Log.WithField("error", err).Error("Password comparison failed")
 			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
@@ -143,7 +143,7 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		// Generate a random verification token
 		verificationToken, err := generateRandomToken()
 		if err != nil {
-			log_.WithField("error", err).Error("Error generating verification token")
+			Log.WithField("error", err).Error("Error generating verification token")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -153,7 +153,7 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			log.WithField("error", err).Error("Error generating password hash")
+			Log.WithField("error", err).Error("Error generating password hash")
 			http.Error(w, "Error generating password hash", http.StatusInternalServerError)
 			return
 		}
@@ -170,7 +170,7 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		// Send verification email
 		err = sendVerificationEmail(email, verificationToken, "teacher")
 		if err != nil {
-			log_.WithField("error", err).Error("Error sending verification email")
+			Log.WithField("error", err).Error("Error sending verification email")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -235,14 +235,14 @@ func handleVerification(w http.ResponseWriter, r *http.Request, token, email str
 		if who == "teacher" {
 			err := storeTeacherData(tempTeacher)
 			if err != nil {
-				log_.WithField("error", err).Error("Error storing teacher data")
+				Log.WithField("error", err).Error("Error storing teacher data")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
 		} else if who == "student" {
 			err := storeStudentData(tempStudent)
 			if err != nil {
-				log_.WithField("error", err).Error("Error storing student data")
+				Log.WithField("error", err).Error("Error storing student data")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
@@ -275,7 +275,7 @@ func storeTeacherData(teacher Teacher) error {
 		return err
 	}
 
-	log_.Info("Teacher data stored successfully:", result.InsertedID)
+	Log.Info("Teacher data stored successfully:", result.InsertedID)
 	return nil
 }
 
@@ -287,7 +287,7 @@ func storeStudentData(student Student) error {
 		return err
 	}
 
-	log_.Info("Student data stored successfully:", result.InsertedID)
+	Log.Info("Student data stored successfully:", result.InsertedID)
 	return nil
 }
 
@@ -319,13 +319,13 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 		collection := db.Client.Database("EduPortal").Collection("students")
 		var student Student
 		if err := collection.FindOne(context.Background(), bson.M{"email": email}).Decode(&student); err != nil {
-			log.WithField("error", err).Error("Error finding student")
+			Log.WithField("error", err).Error("Error finding student")
 			http.Error(w, "Cannot find email", http.StatusBadRequest)
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(password)); err != nil {
-			log.WithField("error", err).Error("Password comparison failed")
+			Log.WithField("error", err).Error("Password comparison failed")
 			http.Error(w, "Invalid password: Password comparison failed", http.StatusBadRequest)
 			return
 		}
@@ -341,7 +341,7 @@ func studLogHandler(w http.ResponseWriter, r *http.Request) {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		tokenString, err := token.SignedString(jwtKey)
 		if err != nil {
-			log.WithField("error", err).Error("Error signing token")
+			Log.WithField("error", err).Error("Error signing token")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -375,7 +375,7 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 		// Generate a random verification token
 		verificationToken, err := generateRandomToken()
 		if err != nil {
-			log_.WithField("error", err).Error("Error generating verification token")
+			Log.WithField("error", err).Error("Error generating verification token")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -385,7 +385,7 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			log.WithField("error", err).Error("Error generating password hash")
+			Log.WithField("error", err).Error("Error generating password hash")
 			http.Error(w, "Error generating password hash", http.StatusInternalServerError)
 			return
 		}
@@ -402,7 +402,7 @@ func studRegHandler(w http.ResponseWriter, r *http.Request) {
 		// Send verification email
 		err = sendVerificationEmail(email, verificationToken, "student")
 		if err != nil {
-			log_.WithField("error", err).Error("Error sending verification email")
+			Log.WithField("error", err).Error("Error sending verification email")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -449,7 +449,7 @@ func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	studentCollection := db.Client.Database("EduPortal").Collection("students")
 	cursor, err := studentCollection.Find(context.Background(), bson.M{})
 	if err != nil {
-		log.WithField("error", err).Error("Error fetching students")
+		Log.WithField("error", err).Error("Error fetching students")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -458,7 +458,7 @@ func teachPersonalPageHandler(w http.ResponseWriter, r *http.Request) {
 	for cursor.Next(context.Background()) {
 		var student Student
 		if err = cursor.Decode(&student); err != nil {
-			log.WithField("error", err).Error("Error decoding student data")
+			Log.WithField("error", err).Error("Error decoding student data")
 			continue
 		}
 		students = append(students, student)

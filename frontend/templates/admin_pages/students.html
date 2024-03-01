@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title>Adding Student</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .container {
-            padding-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style/teachers.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -30,33 +26,16 @@
         </div>
     </nav>
     <div class="container">
-        <h1>Admin Panel</h1>
+        <h1>Add New Student</h1>
+        <form action="/admin/add-student" method="post">
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="text" name="lastName" placeholder="Last Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="tel" name="phone" placeholder="Phone">
+            <input type="password" name="password" placeholder="Password">
 
-        <section>
-            <h2>Teachers</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Teachers}}
-                    <tr>
-                        <td>{{.Name}}</td>
-                        <td>{{.Surname}}</td>
-                        <td>{{.Email}}</td>
-                        <td>{{.Phone}}</td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
-            <!-- Form for adding a new teacher -->
-            <!-- ... -->
-        </section>
+            <button type="submit" class="btn btn-primary">Add Student</button>
+        </form>
 
         <section>
             <h2>Students</h2>
@@ -76,15 +55,17 @@
                         <td>{{.Surname}}</td>
                         <td>{{.Email}}</td>
                         <td>{{.Phone}}</td>
+                        <td>
+                            <form action="/admin/delete-student" method="post">
+                                <input type="hidden" name="id" value="{{.ID.Hex}}">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </td>
                     </tr>
                     {{end}}
                 </tbody>
             </table>
         </section>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

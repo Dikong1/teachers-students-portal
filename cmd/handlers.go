@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"html/template"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -31,10 +30,10 @@ const (
 	contextKeyUserID contextKey = iota
 )
 
-var (
-	mgDomain = os.Getenv("MG_DOMAIN")
-	mgAPIKey = os.Getenv("MG_API_KEY")
-)
+// var (
+// 	mgDomain = os.Getenv("MG_DOMAIN")
+// 	mgAPIKey = os.Getenv("MG_API_KEY")
+// )
 
 var (
 	verificationTokens = make(map[string]string)
@@ -206,7 +205,7 @@ func verifyFailureHandler(w http.ResponseWriter, r *http.Request) {
 
 func sendVerificationEmail(email, token string, who string) error {
 	// Create a new Mailgun client with your domain and API key
-	mg := mailgun.NewMailgun(mgDomain, mgAPIKey)
+	mg := mailgun.NewMailgun("your-mailgun-domain", "your-mailgun-api-key")
 
 	// Compose the email body with the verification link containing the token
 	body := fmt.Sprintf("Click the link below to verify your email:\n\nhttp://localhost:3000/verify?token=%s&email=%s&who=%s", token, email, who)

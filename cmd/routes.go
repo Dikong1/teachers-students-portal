@@ -24,8 +24,10 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/verification-failure", verifyFailureHandler).Methods("GET")
 
 	router.HandleFunc("/admin", AdminPanelHandler).Methods("GET")
-	router.HandleFunc("/admin/add-teacher", getAddingTeacherPage).Methods("GET")
+	router.HandleFunc("/admin/teachers", getTeacherPage).Methods("GET")
 	router.HandleFunc("/admin/add-teacher", addTeacherHandler).Methods("POST")
-	router.HandleFunc("/admin/add-student", getAddingStudentPage).Methods("GET")
+	router.HandleFunc("/admin/delete-teacher", deleteTeacherHandler).Methods("POST")
+	router.HandleFunc("/admin/students", getStudentPage).Methods("GET")
 	router.HandleFunc("/admin/add-student", addStudentHandler).Methods("POST")
+	router.HandleFunc("/admin/delete-student", deleteStudentHandler).Methods("POST")
 }

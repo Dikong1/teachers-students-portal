@@ -27,3 +27,62 @@
 {"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:30:34+06:00"}
 {"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:32:58+06:00"}
 {"level":"info","msg":"Platform stopped","time":"2024-03-01T23:32:58+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:36:25+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:36:25+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:00:01+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:00:01+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:00:26+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:00:26+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:02:11+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:02:11+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:02:15+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:02:15+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:05:54+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:06:07+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:06:07+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:06:31+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:06:31+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:06:59+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:08:04+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:08:04+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:08:06+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:08:06+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:08:36+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:09:15+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:09:54+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:09:54+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:09:57+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:09:57+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:10:39+06:00"}
+{"error":"you called Send() with a domain that contains invalid characters","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:12:18+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:12:47+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:12:47+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:12:49+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:12:49+06:00"}
+{"level":"info","msg":"Teacher data stored successfully:ObjectID(\"65e21ad007bcc77f3fb78303\")","time":"2024-03-02T00:13:36+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:13:44+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:13:44+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:13:47+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:13:47+06:00"}
+{"level":"info","msg":"Student data stored successfully:ObjectID(\"65e21b8d16c85f30a658cea3\")","time":"2024-03-02T00:16:45+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:22:55+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:22:55+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:22:57+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:22:57+06:00"}
+{"level":"info","msg":"Teacher data stored successfully:ObjectID(\"65e21d94f35818ceceed85ba\")","time":"2024-03-02T00:25:24+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:28:40+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:28:40+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:28:44+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:28:44+06:00"}
+{"error":"UnexpectedResponseError URL=https://api.mailgun.net/v3/sandbox4f5650c06d154ef9bbb109d0a9017e38.mailgun.org/messages ExpectedOneOf=[]int{200, 202, 204} Got=403 Error: {\"message\":\"Domain sandbox4f5650c06d154ef9bbb109d0a9017e38.mailgun.org is not allowed to send: Free accounts are for test purposes only. Please upgrade or add the address to authorized recipients in Account Settings.\"}\n","level":"error","msg":"Error sending verification email","time":"2024-03-02T00:31:54+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:32:21+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:32:21+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:32:23+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:32:23+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:39:47+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:39:47+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-02T00:40:21+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-02T00:40:21+06:00"}
+{"level":"info","msg":"Student data stored successfully:ObjectID(\"65e2226858ac57d4ef093300\")","time":"2024-03-02T00:46:01+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-02T00:52:53+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-02T00:52:53+06:00"}

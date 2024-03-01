@@ -130,7 +130,7 @@ func teachLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var tempTeacher Teacher // Temporary global variable to store teacher data
+var tempTeacher Teacher
 
 func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -140,7 +140,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 		phone := r.FormValue("phone")
 		password := r.FormValue("password")
 
-		// Generate a random verification token
 		verificationToken, err := generateRandomToken()
 		if err != nil {
 			Log.WithField("error", err).Error("Error generating verification token")
@@ -148,7 +147,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Store the verification token along with the user's email address
 		verificationTokens[email] = verificationToken
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -158,7 +156,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Store the teacher data in the temporary global variable
 		tempTeacher = Teacher{
 			Name:     firstName,
 			Surname:  lastName,
@@ -167,7 +164,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			Password: string(hashedPassword),
 		}
 
-		// Send verification email
 		err = sendVerificationEmail(email, verificationToken, "teacher")
 		if err != nil {
 			Log.WithField("error", err).Error("Error sending verification email")
@@ -175,7 +171,6 @@ func teachRegHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Render a page indicating that the verification email has been sent
 		renderTemplate(w, "verification_pending.html", nil)
 		return
 	} else if r.Method == "GET" {
@@ -204,27 +199,54 @@ func verifyFailureHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendVerificationEmail(email, token string, who string) error {
-	// Create a new Mailgun client with your domain and API key
-	mg := mailgun.NewMailgun("your-mailgun-domain", "your-mailgun-api-key")
+	mg := mailgun.NewMailgun("domain", "api-key")
 
-	// Compose the email body with the verification link containing the token
 	body := fmt.Sprintf("Click the link below to verify your email:\n\nhttp://localhost:3000/verify?token=%s&email=%s&who=%s", token, email, who)
 
-	// Compose the email message
 	message := mg.NewMessage(
-		"Excited User <mailgun@your-domain.com>", // Replace with sender email address
-		"Email Verification",                     // Email subject
-		body,                                     // Email body
-		email,                                    // Recipient email address
+		"Excited User <mailgun@your-domain.com>",
+		"Email Verification",
+		body,
+		email,
 	)
 
-	// Send the email using the Mailgun client
 	_, _, err := mg.Send(context.Background(), message)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+func sendNewCourseNotification(emails []string, courseName, imageUrl string) error {
+    mg := mailgun.NewMailgun("domain", "api-key")
+    subject := fmt.Sprintf("New Course Added: %s", courseName)
+
+    body := fmt.Sprintf(`
+    <html>
+        <body>
+            <p>A new course '%s' has been added. Check it out!</p>
+            <p><img src="%s" alt="%s" style="width:100%%;max-width:600px;"></p>
+        </body>
+    </html>`, courseName, imageUrl, courseName)
+
+    for _, email := range emails {
+        message := mg.NewMessage(
+            "Admin <mailgun@your-domain.com>",
+            subject,
+            "",
+            email,
+        )
+
+        message.SetHtml(body)
+
+        // Send the email
+        _, _, err := mg.Send(context.Background(), message)
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
 }
 
 func handleVerification(w http.ResponseWriter, r *http.Request, token, email string, who string) {

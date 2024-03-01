@@ -3,12 +3,14 @@ package cmd
 import (
 	"Platform/db"
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -241,46 +243,131 @@ func AdminPanelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := renderTemplate(w, "admin_pages/adminPanel.html", data); err != nil {
-        http.Error(w, "Template rendering error: "+err.Error(), http.StatusInternalServerError)
-    }
+		http.Error(w, "Template rendering error: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func AdminAddCourseHandler(w http.ResponseWriter, r *http.Request) {
-    if err := r.ParseForm(); err != nil {
-        http.Error(w, "Error parsing form", http.StatusBadRequest)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	category := r.FormValue("category")
+	price, err := strconv.ParseFloat(r.FormValue("price"), 64)
+	if err != nil {
+		http.Error(w, "Invalid price", http.StatusBadRequest)
+		return
+	}
+	imageUrl := r.FormValue("imageUrl")
+
+	if name == "" || description == "" || category == "" {
+		http.Error(w, "Fill the requirements", http.StatusBadRequest)
+		return
+	}
+
+	newCourse := Courses{
+		ID:          primitive.NewObjectID(),
+		Name:        name,
+		Description: description,
+		Category:    category,
+		Price:       price,
+		Url:         imageUrl,
+	}
+
+	coursesCollection := db.Client.Database("EduCourses").Collection("courses")
+	_, err = coursesCollection.InsertOne(context.Background(), newCourse)
+	if err != nil {
+		http.Error(w, "Failed to add new course: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	teacherEmails, err := getAllTeacherEmails()
+	if err!= nil {
+        http.Error(w, "Failed to get all teacher emails: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+	studentEmails, err := getAllStudentEmails()
+	if err!= nil {
+        http.Error(w, "Failed to get all student emails: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+	allEmails := append(teacherEmails, studentEmails...)
+
+	err = sendNewCourseNotification(allEmails, name, imageUrl)
+	if err!= nil {
+        http.Error(w, "Failed to send new course notification: "+err.Error(), http.StatusInternalServerError)
         return
     }
 
-    name := r.FormValue("name")
-    description := r.FormValue("description")
-    category := r.FormValue("category")
-    price, err := strconv.ParseFloat(r.FormValue("price"), 64)
-    if err != nil {
-        http.Error(w, "Invalid price", http.StatusBadRequest)
-        return
-    }
-    imageUrl := r.FormValue("imageUrl")
+	for _, email := range allEmails {
+		fmt.Println(email)
+	}
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
 
-    if name == "" || description == "" || category == "" {
-        http.Error(w, "Fill the requirements", http.StatusBadRequest)
-        return
-    }
+func getAllTeacherEmails() ([]string, error) {
+	var emails []string
 
-    newCourse := Courses {
-        ID:          primitive.NewObjectID(),
-        Name:        name,
-        Description: description,
-        Category:    category,
-        Price:       price,
-        Url:         imageUrl,
-    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    coursesCollection := db.Client.Database("EduCourses").Collection("courses")
-    _, err = coursesCollection.InsertOne(context.Background(), newCourse)
-    if err != nil {
-        http.Error(w, "Failed to add new course: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
+	teachersCollection := db.Client.Database("EduPortal").Collection("teachers")
 
-    http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	projection := bson.D{{"email", 1}}
+	options := options.Find().SetProjection(projection)
+
+	cursor, err := teachersCollection.Find(ctx, bson.D{}, options)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var teacher Teacher
+		if err := cursor.Decode(&teacher); err != nil {
+			return nil, err
+		}
+		emails = append(emails, teacher.Email)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return emails, nil
+}
+
+func getAllStudentEmails() ([]string, error) {
+	var emails []string
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	teachersCollection := db.Client.Database("EduPortal").Collection("students")
+
+	projection := bson.D{{"email", 1}}
+	options := options.Find().SetProjection(projection)
+
+	cursor, err := teachersCollection.Find(ctx, bson.D{}, options)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var student Student
+		if err := cursor.Decode(&student); err != nil {
+			return nil, err
+		}
+		emails = append(emails, student.Email)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return emails, nil
 }

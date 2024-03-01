@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
         .container {
             padding-top: 20px;
@@ -29,62 +29,57 @@
             </div>
         </div>
     </nav>
+
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+        Add course
+    </button>
+
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="staticBackdropLabel">New Course</h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/admin/add-course" method="post">
+                <div class="modal-body">
+                    <input type="text" name="name" placeholder="Name" required class="form-control mb-2">
+                    <input type="text" name="description" placeholder="Description" required class="form-control mb-2">
+                    <input type="text" name="category" placeholder="Category" required class="form-control mb-2">
+                    <input type="text" name="price" placeholder="Price" class="form-control mb-2">
+                    <input type="text" name="imageUrl" placeholder="Image URL" class="form-control mb-2">        
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add course</button>
+                </div>
+            </form>            
+          </div>
+        </div>
+      </div>
+
     <div class="container">
         <h1>Admin Panel</h1>
 
-        <section>
-            <h2>Teachers</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Teachers}}
-                    <tr>
-                        <td>{{.Name}}</td>
-                        <td>{{.Surname}}</td>
-                        <td>{{.Email}}</td>
-                        <td>{{.Phone}}</td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
-            <!-- Form for adding a new teacher -->
-            <!-- ... -->
-        </section>
-
-        <section>
-            <h2>Students</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Students}}
-                    <tr>
-                        <td>{{.Name}}</td>
-                        <td>{{.Surname}}</td>
-                        <td>{{.Email}}</td>
-                        <td>{{.Phone}}</td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
-        </section>
+        <div class="row">
+            {{ range .Courses }}
+                <div class="col-md-4">
+                    <div class="card">
+                        <img src="{{ .Url }}" class="card-img-top" alt="{{ .Name }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ .Name }}</h5>
+                            <p class="card-text">{{ .Description }}</p>
+                            <p class="card-text">Category: {{ .Category }}</p>
+                            <p class="card-text">Price: ${{ .Price }}</p>
+                        </div>
+                    </div>
+                </div>
+            {{ end }}
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

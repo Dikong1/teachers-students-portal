@@ -4,6 +4,8 @@ import (
 	"Platform/db"
 	"context"
 	"net/http"
+	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -106,56 +108,56 @@ func addTeacherHandler(w http.ResponseWriter, r *http.Request) {
 
 func deleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-        http.Error(w, "Error parsing form", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
 
-    idStr := r.FormValue("id")
-    if idStr == "" {
-        http.Error(w, "ID is required", http.StatusBadRequest)
-        return
-    }
+	idStr := r.FormValue("id")
+	if idStr == "" {
+		http.Error(w, "ID is required", http.StatusBadRequest)
+		return
+	}
 
-    objID, err := primitive.ObjectIDFromHex(idStr) 
-    if err != nil {
-        http.Error(w, "Invalid ID", http.StatusBadRequest)
-        return
-    }
+	objID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
-    collection := db.Client.Database("EduPortal").Collection("teachers")
-    _, err = collection.DeleteOne(context.Background(), bson.M{"_id": objID})
-    if err != nil {
-        http.Error(w, "Error deleting teacher: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
+	collection := db.Client.Database("EduPortal").Collection("teachers")
+	_, err = collection.DeleteOne(context.Background(), bson.M{"_id": objID})
+	if err != nil {
+		http.Error(w, "Error deleting teacher: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, "/admin/teachers", http.StatusSeeOther)
 }
 
 func deleteStudentHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-        http.Error(w, "Error parsing form", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
 
-    idStr := r.FormValue("id")
-    if idStr == "" {
-        http.Error(w, "ID is required", http.StatusBadRequest)
-        return
-    }
+	idStr := r.FormValue("id")
+	if idStr == "" {
+		http.Error(w, "ID is required", http.StatusBadRequest)
+		return
+	}
 
-    objID, err := primitive.ObjectIDFromHex(idStr) 
-    if err != nil {
-        http.Error(w, "Invalid ID", http.StatusBadRequest)
-        return
-    }
+	objID, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
-    collection := db.Client.Database("EduPortal").Collection("students")
-    _, err = collection.DeleteOne(context.Background(), bson.M{"_id": objID})
-    if err != nil {
-        http.Error(w, "Error deleting student: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
+	collection := db.Client.Database("EduPortal").Collection("students")
+	_, err = collection.DeleteOne(context.Background(), bson.M{"_id": objID})
+	if err != nil {
+		http.Error(w, "Error deleting student: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, "/admin/students", http.StatusSeeOther)
 }
@@ -203,6 +205,82 @@ func addStudentHandler(w http.ResponseWriter, r *http.Request) {
 
 func AdminPanelHandler(w http.ResponseWriter, r *http.Request) {
 	// fetching courses
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var courses []Courses
+	coursesCollection := db.Client.Database("EduCourses").Collection("courses")
 
-	renderTemplate(w, "admin_pages/adminPanel.html", nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	coursesCursor, err := coursesCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to fetch courses: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer coursesCursor.Close(ctx)
+
+	for coursesCursor.Next(ctx) {
+		var course Courses
+		if err := coursesCursor.Decode(&course); err != nil {
+			http.Error(w, "Failed to decode course: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		courses = append(courses, course)
+	}
+	if err := coursesCursor.Err(); err != nil {
+		http.Error(w, "Cursor iteration error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Courses []Courses
+	}{
+		Courses: courses,
+	}
+
+	if err := renderTemplate(w, "admin_pages/adminPanel.html", data); err != nil {
+        http.Error(w, "Template rendering error: "+err.Error(), http.StatusInternalServerError)
+    }
+}
+
+func AdminAddCourseHandler(w http.ResponseWriter, r *http.Request) {
+    if err := r.ParseForm(); err != nil {
+        http.Error(w, "Error parsing form", http.StatusBadRequest)
+        return
+    }
+
+    name := r.FormValue("name")
+    description := r.FormValue("description")
+    category := r.FormValue("category")
+    price, err := strconv.ParseFloat(r.FormValue("price"), 64)
+    if err != nil {
+        http.Error(w, "Invalid price", http.StatusBadRequest)
+        return
+    }
+    imageUrl := r.FormValue("imageUrl")
+
+    if name == "" || description == "" || category == "" {
+        http.Error(w, "Fill the requirements", http.StatusBadRequest)
+        return
+    }
+
+    newCourse := Courses {
+        ID:          primitive.NewObjectID(),
+        Name:        name,
+        Description: description,
+        Category:    category,
+        Price:       price,
+        Url:         imageUrl,
+    }
+
+    coursesCollection := db.Client.Database("EduCourses").Collection("courses")
+    _, err = coursesCollection.InsertOne(context.Background(), newCourse)
+    if err != nil {
+        http.Error(w, "Failed to add new course: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }

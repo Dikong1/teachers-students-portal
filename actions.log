@@ -3,3 +3,27 @@
 {"error":"mongo: no documents in result","level":"error","msg":"Error finding student","time":"2024-03-01T22:52:05+06:00"}
 {"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T22:52:13+06:00"}
 {"level":"info","msg":"Platform stopped","time":"2024-03-01T22:52:13+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T22:56:22+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T22:56:22+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:06:26+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:06:26+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:06:29+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:06:29+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:11:08+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:11:08+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:11:14+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:11:14+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:13:44+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:13:44+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:13:47+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:13:47+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:14:51+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:14:51+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:14:54+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:14:54+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:30:32+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:30:32+06:00"}
+{"level":"info","msg":"Starting Platform...","time":"2024-03-01T23:30:34+06:00"}
+{"action":"start","level":"info","msg":"Application started successfully","status":"success","time":"2024-03-01T23:30:34+06:00"}
+{"action":"stop","level":"info","msg":"Application stopped successfully","status":"success","time":"2024-03-01T23:32:58+06:00"}
+{"level":"info","msg":"Platform stopped","time":"2024-03-01T23:32:58+06:00"}

@@ -15,13 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
-
-var log_ = logrus.New()
-
+ 
 func RunServer() {
 	err := db.DbConnection()
 	if err != nil {
-		log_.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"action": "database_connection",
 			"status": "failed",
 		}).Fatal("Database connection failed: ", err)
@@ -43,7 +41,7 @@ func RunServer() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log_.Fatalf("ListenAndServe(): %v", err)
+			Log.Fatalf("ListenAndServe(): %v", err)
 		}
 	}()
 
@@ -51,13 +49,13 @@ func RunServer() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	<-quit
-	log_.Println("Server is shutting down...")
+	Log.Println("Server is shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log_.Fatalf("Server forced to shutdown: %v", err)
+		Log.Fatalf("Server forced to shutdown: %v", err)
 	}
 }
 

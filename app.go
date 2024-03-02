@@ -20,3 +20,4 @@ func main() {
         }).Info("Application stopped successfully")
 	cmd.Log.Info("Platform stopped")
 }
+ 
